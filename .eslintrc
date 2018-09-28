@@ -1,0 +1,42 @@
+{
+    "parser": "babel-eslint",
+    "env": {
+        "browser": false
+    },
+    "rules": {
+        "quotes": [
+            "error",
+            "double"
+        ],
+        "semi": [
+            "error",
+            "always"
+        ],
+        "indent": [
+            "error",
+            4,
+            {
+                "SwitchCase": 1
+            }
+        ],
+        "no-multiple-empty-lines": [
+            "error",
+            {
+                "max": 1
+            }
+        ],
+        "linebreak-style": [
+            "error",
+            "windows"
+        ],
+        "no-console": [
+            "warn",
+            {
+                "allow": [
+                    "info",
+                    "error"
+                ]
+            }
+        ]
+    }
+}

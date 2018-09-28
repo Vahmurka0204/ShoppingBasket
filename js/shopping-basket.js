@@ -33,6 +33,7 @@ class team {
 function ShoppingBasket() {
     this.products = new Map();
     this.totalSumm = 0;
+    var canCouponWillBeUsed=true;
 }
 
 ShoppingBasket.prototype.AddProduct = function (product, count) {
@@ -51,16 +52,17 @@ ShoppingBasket.prototype.DeleteProduct = function (product) {
 ShoppingBasket.prototype.changeCountOfProduct = function (product, count) {
     this.products.set(product, count);
 };
+ShoppingBasket.prototype.UseCoupon=function(){
 
+}
 function Product(name, price) {
     this.name = name;
     this.price = price;
 }
 
-function Coupon(summ, persent, product) {
+function Coupon(summ, persent) {
     this.discountSumm = summ;
     this.discountPersent = persent;
-    this.productForDiscount = product;
 }
 
 export {

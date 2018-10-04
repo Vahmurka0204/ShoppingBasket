@@ -9,6 +9,9 @@ describe("Shopping", function () {
     it("Create basket", function () {
         new ShoppingBasket();
     });
+    it ("create product", function(){
+        new Product(20);
+    });
 
     it("Add product to basket", function () {
         let onion = new Product("onion", 24);
@@ -26,7 +29,7 @@ describe("Shopping", function () {
         basket.AddProduct(onion, 10);
         basket.changeCountOfProduct(onion, 5);
 
-        assert.equal(basket.products.get(onion), 5);
+        assert.deepEqual(basket.products.get(onion), {count: 5,subSum: 120});
     });
     it("delete product", function () {
         let onion = new Product("onion", 24);
@@ -39,12 +42,14 @@ describe("Shopping", function () {
     it("delete  absent product", function () {
         let onion = new Product("onion", 24);
         let basket = new ShoppingBasket();
-        
-        //basket.AddProduct(onion, 10);
-        //basket.DeleteProduct(onion);
         assert.equal(basket.DeleteProduct(onion),undefined);
     });
     it("Create coupon", function(){
-        let coupon=new Coupon(500,0,"");
+        let coupon=new Coupon("money", 200);
+
+    });
+    it("create wrong type coupon",function(){
+        assert.throws(()=>{new Coupon("hhh",200);}, Error);
+
     });
 });

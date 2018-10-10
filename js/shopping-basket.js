@@ -4,148 +4,108 @@ function ShoppingBasket() {
     this.canCouponBeUsed = true;
     this.undoArray = [];
     this.redoArray = [];
-    this.operation;
 }
 
 ShoppingBasket.prototype.AddProduct = function (product, count) {
-    ClearRedoArr();
-    this.products.set(product, {
-        count: count,
-        subSum: count * product.price
-    });
-    this.totalSumm += product.price * count;
+    add(this, product, count);
     this.undoArray.push({
         action: "Add",
         item: product,
-        count: count + 5
+        count: count
 
     });
 };
 
 ShoppingBasket.prototype.DeleteProduct = function (product) {
-    ClearRedoArr();
-    this.operation = "operation";
     if (this.products.has(product)) {
-        this.totalSumm -= this.products.get(product).subSum;
         this.undoArray.push({
             action: "Delete",
             item: product,
             count: this.products.get(product).count
         });
-        this.products.delete(product);
+        deleteP(this, product);
     }
 };
 
 ShoppingBasket.prototype.changeCountOfProduct = function (product, count) {
-    ClearRedoArr();
-    this.operation = "operation";
     if (count > 0 && this.products.has(product)) {
-        this.totalSumm -= this.products.get(product).subSum;
         this.undoArray.push({
             action: "Change",
             item: product,
             count: this.products.get(product).count
         });
-        this.products.set(product, {
-            count,
-            subSum: product.price * count
-        });
-        this.totalSumm += this.products.get(product).subSum;
+        this.totalSumm -= this.products.get(product).subSum;
+        add(this, product, count);
     }
 
 };
 
-ShoppingBasket.prototype.UseCoupon = function (coupon, product = "") {
-    ClearRedoArr();
-    this.operation = "operation";
-    switch (coupon.typeName) {
+ShoppingBasket.prototype.UseCoupon = function (coupon, product = "basket") {
+    switch (coupon.typeOfCoupon) {
         case "money":
-            if (product === "" && this.canCouponBeUsed) {
+            if (product === "basket" && this.canCouponBeUsed) {
                 this.totalSumm -= coupon.discountAmount;
                 this.canCouponBeUsed = false;
-                this.undoArray.push({
-                    action: "UseCoupon",
-                    item: "",
-                    coupon
-                });
                 if (this.totalSumm < 0)
                     this.totalSumm = 0;
             } else if (this.products.has(product) && this.canCouponBeUsed) {
+                this.totalSumm -= this.products.get(product).subSum;
                 this.products.get(product).subSum -= coupon.discountAmount;
-                this.undoArray.push({
-                    action: "UseCoupon",
-                    item: product,
-                    coupon
-                });
                 this.canCouponBeUsed = false;
                 if (this.products.get(product).subSum < 0)
                     this.products.get(product).subSum = 0;
-            } else {
-                throw new Error("Coupon cannot be used");
+                this.totalSumm += this.products.get(product).subSum;
             }
             break;
         case "persent":
-            if (product === "" && this.canCouponBeUsed) {
+            if (product === "basket" && this.canCouponBeUsed) {
                 this.totalSumm *= (1 - (coupon.discountAmount / 100));
                 this.canCouponBeUsed = false;
-                this.undoArray.push({
-                    action: "UseCoupon",
-                    item: "",
-                    coupon
-                });
             } else if (this.products.has(product) && this.canCouponBeUsed) {
+                this.totalSumm -= this.products.get(product).subSum;
                 this.products.get(product).subSum *= (1 - (coupon.discountAmount / 100));
-                this.undoArray.push({
-                    action: "UseCoupon",
-                    item: product,
-                    coupon
-                });
                 this.canCouponBeUsed = false;
-            } else {
-                throw new Error("Coupon cannot be used");
-            };
+                this.totalSumm += this.products.get(product).subSum;
+            }
             break;
         default:
-            throw new Error("Coupon cannot be used");
+            ;
+
+    }
+    this.undoArray.push({
+        action: "UseCoupon",
+        item: product,
+        coupon
+    });
+
+};
+ShoppingBasket.prototype.couponCancellation = function (coupon, product = "basket") {
+    if (product === "basket" && !this.canCouponBeUsed) {
+        let summ = 0;
+        this.products.forEach(function (prod) {
+            summ += prod.subSum;
+        });
+        this.totalSumm = summ;
+        this.canCouponBeUsed = true;
+    } else if (this.products.has(product) && !this.canCouponBeUsed) {
+        this.products.get(product).subSum = product.price * this.products.get(product).count;
+        this.canCouponBeUsed = true;
+    } else {
+        throw new Error("Coupon cannot be cancelled");
     }
 
 };
-ShoppingBasket.prototype.couponCancellation = function (coupon, product = "") {
-    switch (coupon.typeName) {
-        case "money":
-            if (product === "" && !this.canCouponBeUsed) {
-                this.products.forEach(() => {
-                    this.totalSumm += this.products.get(product).subSum;
-                    this.canCouponBeUsed = true;
-                });
-            } else if (this.products.has(product) && !this.canCouponBeUsed) {
-                this.products.get(product).subSum = product.price * this.products.get(product).count;
-                this.canCouponBeUsed = true;
-            } else {
-                throw new Error("Coupon cannot be cancelled");
-            }
-            break;
-        case "persent":
-            ;
-            break;
-        default:
-            throw new Error("Coupon cannot be used");
-    }
-};
 ShoppingBasket.prototype.Undo = function () {
     if (this.undoArray.length > 0) {
-        this.operation = "operation";
         var command = this.undoArray.pop();
         switch (command.action) {
             case "Add":
-                this.DeleteProduct(command.item);
+                deleteP(this, command.item);
                 this.redoArray.push(command);
-                this.undoArray.pop();
                 break;
             case "Delete":
-                this.AddProduct(command.item, command.count);
+                add(this, command.item, command.count);
                 this.redoArray.push(command);
-                this.undoArray.pop();
                 break;
             case "Change":
                 this.redoArray.push({
@@ -154,25 +114,21 @@ ShoppingBasket.prototype.Undo = function () {
                     count: this.products.get(command.item).count
                 });
                 this.changeCountOfProduct(command.item, command.count);
-                this.undoArray.pop();
                 break;
             case "UseCoupon":
                 this.redoArray.push(command);
                 this.couponCancellation(command.coupon, command.item);
-                this.undoArray.pop();
                 break;
             default:
                 this.undoArray.push(command);
                 throw new Error("");
 
         }
-        this.operation = "undo";
     }
 
 };
 ShoppingBasket.prototype.Redo = function () {
     if (this.redoArray.length > 0) {
-        this.operation = "operation";
         var command = this.redoArray.pop();
         switch (command.action) {
             case "Delete":
@@ -193,24 +149,44 @@ ShoppingBasket.prototype.Redo = function () {
 
         }
     }
-    this.operation = "redo";
+};
+ShoppingBasket.prototype.PrintCheck = function () {
+    var check = "";
+    var number = 0;
+    for (var [prod, value] of this.products) {
+
+        check += `${++number}. ${prod.name}  ${value.count}  ${value.subSum.toFixed(2)}\n`;
+
+    };
+    if (!this.canCouponBeUsed) {
+        check += "The coupon is applied.\n";
+    }
+    check += `Total: ${this.totalSumm.toFixed(2)}`;
+    return check;
 };
 
-function ClearRedoArr() {
-    if (this.operation === "undo" || this.operation === "redo") {
-        this.redoArray.splice(0, this.redoArray.length);
-    }
+function deleteP(basket, product) {
+    basket.totalSumm -= basket.products.get(product).subSum;
+    basket.products.delete(product);
+}
+
+function add(basket, product, count) {
+    basket.products.set(product, {
+        count: count,
+        subSum: count * product.price
+    });
+    basket.totalSumm += product.price * count;
 }
 
 function Product(name, price) {
-    if (name != "") {
+    if (name.length > 0 && price > 0) {
         this.name = name;
         this.price = price;
     }
 }
 
 function Coupon(typeName, discountAmount) {
-    if (typeName.toLowerCase() === "money") {
+    if (typeName.toLowerCase() === "money" && discountAmount > 0) {
         this.typeOfCoupon = typeName.toLowerCase();
         this.discountAmount = discountAmount;
     } else if (typeName.toLowerCase() === "persent" && discountAmount > 0 && discountAmount <= 100) {

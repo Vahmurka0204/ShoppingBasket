@@ -3,7 +3,7 @@ function ShoppingBasket() {
     this.totalSumm = 0;
     this.undoArray = [];
     this.redoArray = [];
-    this.Coupon=null;
+    this.Coupon = null;
 }
 
 ShoppingBasket.prototype.AddProduct = function (product, count) {
@@ -37,16 +37,22 @@ ShoppingBasket.prototype.ChangeCountOfProduct = function (product, count) {
         });
         this.totalSumm -= this.products.get(product).subSum;
         add(this, product, count);
+    } else {
+        throw new Error("Try another product or its count");
     }
     this.redoArray.splice(0, this.redoArray.length);
 };
 
-ShoppingBasket.prototype.UseCoupon = function (coupon, product = "basket") {
+ShoppingBasket.prototype.UseCoupon = function (coupon, product = {
+    name: "basket"
+}) {
     useCoupon(this, coupon, product);
     this.redoArray.splice(0, this.redoArray.length);
 };
-ShoppingBasket.prototype.couponCancellation = function (product = "basket") {
-    if (product === "basket" && !!this.Coupon) {
+ShoppingBasket.prototype.couponCancellation = function (product = {
+    name: "basket"
+}) {
+    if (product.name === "basket" && !!this.Coupon) {
         let summ = 0;
         this.products.forEach(function (prod) {
             summ += prod.subSum;
@@ -57,7 +63,7 @@ ShoppingBasket.prototype.couponCancellation = function (product = "basket") {
     } else {
         throw new Error("Coupon cannot be cancelled");
     }
-    this.Coupon=null;
+    this.Coupon = null;
 };
 ShoppingBasket.prototype.Undo = function () {
     if (this.undoArray.length > 0) {
@@ -77,50 +83,42 @@ ShoppingBasket.prototype.Undo = function () {
                     item: command.item,
                     count: this.products.get(command.item).count
                 });
-                this.totalSumm -= this.products.get(product).subSum;
-                add(this, product, count);
+                this.totalSumm -= this.products.get(command.item).subSum;
+                add(this, command.item, command.count);
                 break;
             case "UseCoupon":
                 this.redoArray.push(command);
                 this.couponCancellation(command.item);
                 break;
-            default:
-                this.undoArray.push(command);
-                throw new Error("");
 
         }
     }
-
 };
 ShoppingBasket.prototype.Redo = function () {
     if (this.redoArray.length > 0) {
         var command = this.redoArray.pop();
         switch (command.action) {
             case "Delete":
-                deleteP(command.item);
+                deleteP(this, command.item);
                 this.undoArray.push(command);
                 break;
             case "Add":
-                add(this, product, count);
+                add(this, command.item, command.count);
                 this.undoArray.push(command);
                 break;
             case "Change":
                 this.undoArray.push({
                     action: "Change",
-                    item: product,
-                    count: this.products.get(product).count
+                    item: command.item,
+                    count: this.products.get(command.item).count
                 });
-                this.totalSumm -= this.products.get(product).subSum;
-                add(this, product, count);
+                this.totalSumm -= this.products.get(command.item).subSum;
+                add(this, command.item, command.count);
                 break;
             case "UseCoupon":
                 useCoupon(this, command.coupon, command.item);
                 this.undoArray.push(command);
                 break;
-            default:
-                this.redoArray.push(command);
-                throw new Error("");
-
         }
     }
 };
@@ -133,7 +131,7 @@ ShoppingBasket.prototype.PrintCheck = function () {
 
     };
     if (!!this.Coupon) {
-        check += "The coupon is applied.\n";
+        check += `The coupon is applied to ${this.Coupon.item.name}. Discount amount is ${this.Coupon.coupon.discountAmount}${this.Coupon.coupon.typeOfCoupon==="money"? "$": "%"}\n`;
     }
     check += `Total: ${this.totalSumm.toFixed(2)}`;
     return check;
@@ -142,7 +140,7 @@ ShoppingBasket.prototype.PrintCheck = function () {
 function useCoupon(basket, coupon, product) {
     switch (coupon.typeOfCoupon) {
         case "money":
-            if (product === "basket" && !basket.Coupon) {
+            if (product.name === "basket" && !basket.Coupon) {
                 basket.totalSumm -= coupon.discountAmount;
                 if (basket.totalSumm < 0)
                     basket.totalSumm = 0;
@@ -155,7 +153,7 @@ function useCoupon(basket, coupon, product) {
             }
             break;
         case "persent":
-            if (product === "basket" && !basket.Coupon) {
+            if (product.name === "basket" && !basket.Coupon) {
                 basket.totalSumm *= (1 - (coupon.discountAmount / 100));
             } else if (basket.products.has(product) && !basket.Coupon) {
                 basket.totalSumm -= basket.products.get(product).subSum;
@@ -169,7 +167,10 @@ function useCoupon(basket, coupon, product) {
         item: product,
         coupon
     });
-    basket.Coupon={item:product,coupon};
+    basket.Coupon = {
+        item: product,
+        coupon
+    };
 }
 
 function deleteP(basket, product) {
@@ -193,15 +194,18 @@ function Product(name, price) {
 }
 
 function Coupon(typeName, discountAmount) {
-    if (typeName.toLowerCase() === "money" && discountAmount > 0) {
-        this.typeOfCoupon = typeName.toLowerCase();
-        this.discountAmount = discountAmount;
-    } else if (typeName.toLowerCase() === "persent" && discountAmount > 0 && discountAmount <= 100) {
-        this.typeOfCoupon = typeName.toLowerCase();
-        this.discountAmount = discountAmount;
-    } else {
-        throw new Error("Right coupon types is 'Money' or 'Persent'. Choose one of them. The discount percentage should be from zero to one hundred percent.");
-    }
+    if (!!typeName && !!discountAmount) {
+        if (typeName.toLowerCase() === "money" && discountAmount > 0) {
+            this.typeOfCoupon = typeName.toLowerCase();
+            this.discountAmount = discountAmount;
+        } else if (typeName.toLowerCase() === "persent" && discountAmount > 0 && discountAmount <= 100) {
+            this.typeOfCoupon = typeName.toLowerCase();
+            this.discountAmount = discountAmount;
+        }
+        else {
+            throw new Error("Right coupon types is 'Money' or 'Persent'. Choose one of them. The discount percentage should be from zero to one hundred percent.");
+        }
+    }else { throw new Error("Fill coupon's parameter");} 
 }
 
 export {

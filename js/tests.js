@@ -5,12 +5,12 @@ import {
 } from "./shopping-basket";
 import assert from "assert";
 
-describe("Shopping", function () {
+describe("Shopping basket tests", function () {
     it("Create basket", function () {
         new ShoppingBasket();
     });
-    it("create product", function () {
-        new Product(20);
+    it("Сreate product", function () {
+        new Product(onion, 20);
     });
 
     it("Add product to basket", function () {
@@ -31,7 +31,7 @@ describe("Shopping", function () {
         assert.equal(basket.products.size, 1);
     });
 
-    it("change quantity", function () {
+    it("change product quantity", function () {
         let onion = new Product("onion", 24);
         let basket = new ShoppingBasket();
 
@@ -43,7 +43,7 @@ describe("Shopping", function () {
             subSum: 120
         });
     });
-    it("change quantity wrong number", function () {
+    it("change quantity, wrong number", function () {
         let onion = new Product("onion", 24);
         let basket = new ShoppingBasket();
 
@@ -73,7 +73,7 @@ describe("Shopping", function () {
             subSum: 240
         });
     });
-    it("redo undo delete product", function () {
+    it("redo delete product", function () {
         debugger;
         let onion = new Product("onion", 24);
         let basket = new ShoppingBasket();
@@ -98,13 +98,13 @@ describe("Shopping", function () {
         }, Error);
 
     });
-    it("create coupon without type", function () {
+    it("create coupon without one parameter", function () {
         assert.throws(() => {
             new Coupon(200);
         }, Error);
 
     });
-    it("use money coupon", function () {
+    it("use money coupon for basket", function () {
         let coupon = new Coupon("money", 200);
         let basket = new ShoppingBasket();
         let onion = new Product("onion", 20);
@@ -113,7 +113,7 @@ describe("Shopping", function () {
         assert.equal(basket.totalSumm, 100);
 
     });
-    it("use persent coupon", function () {
+    it("use persent coupon for basket", function () {
         let coupon = new Coupon("persent", 50);
         let basket = new ShoppingBasket();
         let onion = new Product("onion", 20);
@@ -122,7 +122,7 @@ describe("Shopping", function () {
         assert.equal(basket.totalSumm, 300);
 
     });
-    it("undo use money coupon", function () {
+    it("undo use money coupon for basket", function () {
         let coupon = new Coupon("money", 700);
         let basket = new ShoppingBasket();
         let onion = new Product("onion", 20);
@@ -132,7 +132,7 @@ describe("Shopping", function () {
         assert.equal(basket.totalSumm, 600);
 
     });
-    it("use product money coupon", function () {
+    it("use money coupon for product", function () {
         let coupon = new Coupon("money", 200);
         let basket = new ShoppingBasket();
         let onion = new Product("onion", 20);
@@ -141,7 +141,7 @@ describe("Shopping", function () {
         assert.equal(basket.products.get(onion).subSum, 100);
 
     });
-    it("undo use product money coupon", function () {
+    it("undo use money coupon for product", function () {
         let coupon = new Coupon("money", 200);
         let basket = new ShoppingBasket();
         let onion = new Product("onion", 20);
@@ -151,7 +151,7 @@ describe("Shopping", function () {
         assert.equal(basket.products.get(onion).subSum, 300);
 
     });
-    it("use product money coupon discount > Summ", function () {
+    it("use money coupon for product, discount > subsumm", function () {
         let coupon = new Coupon("money", 1000);
         let basket = new ShoppingBasket();
         let onion = new Product("onion", 20);
@@ -160,7 +160,7 @@ describe("Shopping", function () {
         assert.equal(basket.products.get(onion).subSum, 0);
 
     });
-    it("use product persent coupon", function () {
+    it("use persent coupon for product", function () {
         let coupon = new Coupon("persent", 50);
         let basket = new ShoppingBasket();
         let onion = new Product("onion", 20);
@@ -169,7 +169,7 @@ describe("Shopping", function () {
         assert.equal(basket.products.get(onion).subSum, 300);
 
     });
-    it("undo use product persent coupon", function () {
+    it("undo use persent coupon for product", function () {
         let coupon = new Coupon("persent", 50);
         let basket = new ShoppingBasket();
         let onion = new Product("onion", 20);
@@ -179,7 +179,7 @@ describe("Shopping", function () {
         assert.equal(basket.products.get(onion).subSum, 600);
 
     });
-    it("redo undo use product persent coupon", function () {
+    it("redo use product persent coupon", function () {
         let coupon = new Coupon("persent", 50);
         let basket = new ShoppingBasket();
         let onion = new Product("onion", 20);
@@ -190,7 +190,7 @@ describe("Shopping", function () {
         assert.equal(basket.products.get(onion).subSum, 300);
 
     });
-    it("undo change", function () {
+    it("undo change product quantity", function () {
         let onion = new Product("onion", 24);
         let basket = new ShoppingBasket();
         basket.AddProduct(onion, 10);
@@ -202,7 +202,7 @@ describe("Shopping", function () {
         });
 
     });
-    it("undo redo change", function () {
+    it("redo change product quantity", function () {
         let onion = new Product("onion", 24);
         let basket = new ShoppingBasket();
         basket.AddProduct(onion, 10);
@@ -215,7 +215,7 @@ describe("Shopping", function () {
         });
 
     });
-    it("print check", function () {
+    it("print check money coupon", function () {
         let onion = new Product("onion", 10);
         let tomato = new Product("tomato", 12);
         let basket = new ShoppingBasket();
@@ -226,7 +226,7 @@ describe("Shopping", function () {
         assert.equal(basket.PrintCheck(), "1. onion  10  100.00\n2. tomato  4  18.00\nThe coupon is applied to tomato. Discount amount is 30$\nTotal: 118.00");
 
     });
-    it("print persent coupon", function () {
+    it("print check persent coupon", function () {
         let coupon = new Coupon("persent", 50);
         let basket = new ShoppingBasket();
         let onion = new Product("onion", 20);

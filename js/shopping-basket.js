@@ -1,150 +1,104 @@
 function ShoppingBasket() {
-    this.products = new Map();
-    this.totalSumm = 0;
-    this.undoArray = [];
-    this.redoArray = [];
-    this.Coupon = null;
+    this.statesOfBasket = [{
+        products: new Map(),
+        Coupon: {
+            coupon:null,
+            product:null
+        }
+    }];
+    this.cursor = 1;
+    this.Total = 0;
 }
 
 ShoppingBasket.prototype.AddProduct = function (product, count) {
-    add(this, product, count);
-    this.undoArray.push({
-        action: "Add",
-        item: product,
-        count: count
+    removeOldStates(this);
+    var basket = getLastState(this);
+    basket.products.set(product, {
+        count: count,
+        subSum: count * product.price
     });
-    this.redoArray.splice(0, this.redoArray.length);
+    this.statesOfBasket.push(basket);
+    this.cursor++;
 };
 
 ShoppingBasket.prototype.DeleteProduct = function (product) {
-    if (this.products.has(product)) {
-        this.undoArray.push({
-            action: "Delete",
-            item: product,
-            count: this.products.get(product).count
-        });
-        deleteP(this, product);
+    removeOldStates(this);
+    var basket = getLastState(this);
+    if (basket.products.has(product)) {
+        basket.products.delete(product);
     }
-    this.redoArray.splice(0, this.redoArray.length);
+    this.statesOfBasket.push(basket);
+    this.cursor++;
 };
 
 ShoppingBasket.prototype.ChangeCountOfProduct = function (product, count) {
-    if (count > 0 && this.products.has(product)) {
-        this.undoArray.push({
-            action: "Change",
-            item: product,
-            count: this.products.get(product).count
+    var basket = getLastState(this);
+    removeOldStates(this);
+    if (count > 0 && basket.products.has(product)) {
+        basket.products.set(product, {
+            count: count,
+            subSum: count * product.price
         });
-        this.totalSumm -= this.products.get(product).subSum;
-        add(this, product, count);
+        this.statesOfBasket.push(basket);
+        this.cursor++;
     } else {
         throw new Error("Try another product or its count");
     }
-    this.redoArray.splice(0, this.redoArray.length);
 };
 
 ShoppingBasket.prototype.UseCoupon = function (coupon, product = {
     name: "basket"
 }) {
-    useCoupon(this, coupon, product);
-    this.redoArray.splice(0, this.redoArray.length);
-};
-ShoppingBasket.prototype.couponCancellation = function (product = {
-    name: "basket"
-}) {
-    if (product.name === "basket" && !!this.Coupon) {
-        let summ = 0;
-        this.products.forEach(function (prod) {
-            summ += prod.subSum;
-        });
-        this.totalSumm = summ;
-    } else if (this.products.has(product) && !!this.Coupon) {
-        this.products.get(product).subSum = product.price * this.products.get(product).count;
-    } else {
-        throw new Error("Coupon cannot be cancelled");
-    }
-    this.Coupon = null;
+    removeOldStates(this);
+    var basket = getLastState(this);
+    basket.Coupon = {
+        coupon,
+        product
+    };
+    this.statesOfBasket.push(basket);
+    this.cursor++;
+
 };
 ShoppingBasket.prototype.Undo = function () {
-    if (this.undoArray.length > 0) {
-        var command = this.undoArray.pop();
-        switch (command.action) {
-            case "Add":
-                deleteP(this, command.item);
-                this.redoArray.push(command);
-                break;
-            case "Delete":
-                add(this, command.item, command.count);
-                this.redoArray.push(command);
-                break;
-            case "Change":
-                this.redoArray.push({
-                    action: "Change",
-                    item: command.item,
-                    count: this.products.get(command.item).count
-                });
-                this.totalSumm -= this.products.get(command.item).subSum;
-                add(this, command.item, command.count);
-                break;
-            case "UseCoupon":
-                this.redoArray.push(command);
-                this.couponCancellation(command.item);
-                break;
-
-        }
+    if (this.statesOfBasket.length > 1 && this.cursor > 1) {
+        this.cursor--;
     }
 };
 ShoppingBasket.prototype.Redo = function () {
-    if (this.redoArray.length > 0) {
-        var command = this.redoArray.pop();
-        switch (command.action) {
-            case "Delete":
-                deleteP(this, command.item);
-                this.undoArray.push(command);
-                break;
-            case "Add":
-                add(this, command.item, command.count);
-                this.undoArray.push(command);
-                break;
-            case "Change":
-                this.undoArray.push({
-                    action: "Change",
-                    item: command.item,
-                    count: this.products.get(command.item).count
-                });
-                this.totalSumm -= this.products.get(command.item).subSum;
-                add(this, command.item, command.count);
-                break;
-            case "UseCoupon":
-                useCoupon(this, command.coupon, command.item);
-                this.undoArray.push(command);
-                break;
-        }
+    if (this.cursor < this.statesOfBasket.length) {
+        this.cursor++;
     }
 };
 ShoppingBasket.prototype.PrintCheck = function () {
     var check = "";
     var number = 0;
-    for (var [prod, value] of this.products) {
-
-        check += `${++number}. ${prod.name}  ${value.count}  ${value.subSum.toFixed(2)}\n`;
-
-    };
-    if (!!this.Coupon) {
-        check += `The coupon is applied to ${this.Coupon.item.name}. Discount amount is ${this.Coupon.coupon.discountAmount}${this.Coupon.coupon.typeOfCoupon==="money"? "$": "%"}\n`;
+    var basket = getLastState(this);
+    basket.totalSumm = getTotal(basket);
+    if (!!basket.Coupon.coupon) {
+        useCoupon(basket, basket.Coupon.coupon, basket.Coupon.product);
+        check += `The coupon is applied to ${basket.Coupon.product.name}. Discount amount is ${basket.Coupon.coupon.discountAmount}${basket.Coupon.coupon.typeOfCoupon==="money"? "$": "%"}\n`;
     }
-    check += `Total: ${this.totalSumm.toFixed(2)}`;
+    for (var [prod, value] of basket.products) {
+        check += `${++number}. ${prod.name}  ${value.count}  ${value.subSum.toFixed(2)}\n`;
+    };
+    check += `Total: ${ basket.totalSumm.toFixed(2)}`;
     return check;
 };
+
+function removeOldStates(basket) {
+    if (basket.cursor !== basket.statesOfBasket.length) {
+        basket.statesOfBasket.splice(basket.cursor, basket.statesOfBasket.length - basket.cursor);
+    }
+}
 
 function useCoupon(basket, coupon, product) {
     switch (coupon.typeOfCoupon) {
         case "money":
-            if (product.name === "basket" && !basket.Coupon) {
+            if (product.name === "basket") {
                 basket.totalSumm -= coupon.discountAmount;
                 if (basket.totalSumm < 0)
                     basket.totalSumm = 0;
-            } else if (basket.products.has(product) && !basket.Coupon) {
+            } else if (basket.products.has(product)) {
                 basket.totalSumm -= basket.products.get(product).subSum;
                 basket.products.get(product).subSum -= coupon.discountAmount;
                 if (basket.products.get(product).subSum < 0)
@@ -153,37 +107,15 @@ function useCoupon(basket, coupon, product) {
             }
             break;
         case "persent":
-            if (product.name === "basket" && !basket.Coupon) {
+            if (product.name === "basket" && !!basket.Coupon) {
                 basket.totalSumm *= (1 - (coupon.discountAmount / 100));
-            } else if (basket.products.has(product) && !basket.Coupon) {
+            } else if (basket.products.has(product) && !!basket.Coupon) {
                 basket.totalSumm -= basket.products.get(product).subSum;
                 basket.products.get(product).subSum *= (1 - (coupon.discountAmount / 100));
                 basket.totalSumm += basket.products.get(product).subSum;
             }
             break;
     }
-    basket.undoArray.push({
-        action: "UseCoupon",
-        item: product,
-        coupon
-    });
-    basket.Coupon = {
-        item: product,
-        coupon
-    };
-}
-
-function deleteP(basket, product) {
-    basket.totalSumm -= basket.products.get(product).subSum;
-    basket.products.delete(product);
-}
-
-function add(basket, product, count) {
-    basket.products.set(product, {
-        count: count,
-        subSum: count * product.price
-    });
-    basket.totalSumm += product.price * count;
 }
 
 function Product(name, price) {
@@ -201,13 +133,40 @@ function Coupon(typeName, discountAmount) {
         } else if (typeName.toLowerCase() === "persent" && discountAmount > 0 && discountAmount <= 100) {
             this.typeOfCoupon = typeName.toLowerCase();
             this.discountAmount = discountAmount;
-        }
-        else {
+        } else {
             throw new Error("Right coupon types is 'Money' or 'Persent'. Choose one of them. The discount percentage should be from zero to one hundred percent.");
         }
-    }else { throw new Error("Fill coupon's parameter");} 
+    } else {
+        throw new Error("Fill coupon's parameter");
+    }
 }
 
+function getLastState(basket) {
+    var lastState = basket.statesOfBasket[basket.cursor - 1];
+    var Copy = {};
+    Copy.products = new Map();
+
+    Copy.Coupon = {
+        coupon: lastState.Coupon.coupon,
+        product: lastState.Coupon.product
+    };
+
+    for (var [prod, value] of lastState.products) {
+        Copy.products.set(prod, {
+            count: value.count,
+            subSum: value.subSum
+        });
+    }
+    return Copy;
+}
+
+function getTotal(basket) {
+    var Total = 0;
+    for (var value of basket.products.values()) {
+        Total += value.subSum;
+    }
+    return Total;
+}
 export {
     ShoppingBasket,
     Product,

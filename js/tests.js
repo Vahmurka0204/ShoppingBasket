@@ -12,7 +12,9 @@ describe("Shopping basket tests", function () {
     it("Сreate product", function () {
         new Product("onion", 20);
     });
-
+    it("Сreate wrong product", function () {
+        new Product("onion", -20);
+    });
     it("Add product to basket", function () {
         let onion = new Product("onion", 24);
         let basket = new ShoppingBasket();
@@ -171,6 +173,21 @@ describe("Shopping basket tests", function () {
             }
         });
     });
+    it("use money coupon for absent product", function () {
+        let coupon = new Coupon("money", 200);
+        let basket = new ShoppingBasket();
+        let onion = new Product("onion", 20);
+        let tomato=new Product("tomato", 30);
+        basket.AddProduct(onion, 15);
+        basket.UseCoupon(coupon, tomato);
+        var lastState = basket.statesOfBasket[basket.statesOfBasket.length - 1];
+        assert.deepEqual(lastState.Coupon, {
+            coupon: 
+                null
+            ,
+            product: null
+        });
+    });
     it("undo use money coupon for product", function () {
         let coupon = new Coupon("money", 200);
         let basket = new ShoppingBasket();
@@ -243,6 +260,38 @@ describe("Shopping basket tests", function () {
         assert.equal(basket.PrintCheck(), "The coupon is applied to tomato. Discount amount is 30$\n1. onion  10  100.00\n2. tomato  4  18.00\nTotal: 118.00");
 
     });
+    it("print check money coupon for delete product", function () {
+        let onion = new Product("onion", 10);
+        let tomato = new Product("tomato", 12);
+        let basket = new ShoppingBasket();
+        let coupon = new Coupon("money", 30);
+        basket.AddProduct(onion, 10);
+        basket.AddProduct(tomato, 4);
+        basket.UseCoupon(coupon, tomato);
+        basket.DeleteProduct(tomato);
+        assert.equal(basket.PrintCheck(), "1. onion  10  100.00\nTotal: 100.00");
+
+    });
+    it("print check money coupon, discount amount> subSum", function () {
+        let onion = new Product("onion", 10);
+        let tomato = new Product("tomato", 12);
+        let basket = new ShoppingBasket();
+        let coupon = new Coupon("money", 50);
+        basket.AddProduct(onion, 10);
+        basket.AddProduct(tomato, 4);
+        basket.UseCoupon(coupon, tomato);
+        assert.equal(basket.PrintCheck(), "The coupon is applied to tomato. Discount amount is 50$\n1. onion  10  100.00\n2. tomato  4  0.00\nTotal: 100.00");
+
+    });
+    it("print check", function () {
+        let onion = new Product("onion", 10);
+        let tomato = new Product("tomato", 12);
+        let basket = new ShoppingBasket();
+        basket.AddProduct(onion, 10);
+        basket.AddProduct(tomato, 4);
+        assert.equal(basket.PrintCheck(), "1. onion  10  100.00\n2. tomato  4  48.00\nTotal: 148.00");
+
+    });
     it("print check persent coupon", function () {
         debugger;
         let coupon = new Coupon("persent", 50);
@@ -251,6 +300,26 @@ describe("Shopping basket tests", function () {
         basket.AddProduct(onion, 30);
         basket.UseCoupon(coupon);
         assert.equal(basket.PrintCheck(), "The coupon is applied to basket. Discount amount is 50%\n1. onion  30  600.00\nTotal: 300.00");
+
+    });
+    it("print check persent coupon for product", function () {
+        debugger;
+        let coupon = new Coupon("persent", 50);
+        let basket = new ShoppingBasket();
+        let onion = new Product("onion", 20);
+        basket.AddProduct(onion, 30);
+        basket.UseCoupon(coupon, onion);
+        assert.equal(basket.PrintCheck(), "The coupon is applied to onion. Discount amount is 50%\n1. onion  30  300.00\nTotal: 300.00");
+
+    });
+    it("print check money coupon, discount amount > Total", function () {
+        debugger;
+        let coupon = new Coupon("money", 700);
+        let basket = new ShoppingBasket();
+        let onion = new Product("onion", 20);
+        basket.AddProduct(onion, 30);
+        basket.UseCoupon(coupon);
+        assert.equal(basket.PrintCheck(), "The coupon is applied to basket. Discount amount is 700$\n1. onion  30  600.00\nTotal: 0.00");
 
     });
     it("clear redo after new operation", function () {

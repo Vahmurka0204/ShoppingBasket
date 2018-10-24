@@ -2,8 +2,8 @@ function ShoppingBasket() {
     this.statesOfBasket = [{
         products: new Map(),
         Coupon: {
-            coupon:null,
-            product:null
+            coupon: null,
+            product: null
         }
     }];
     this.cursor = 1;
@@ -51,12 +51,14 @@ ShoppingBasket.prototype.UseCoupon = function (coupon, product = {
 }) {
     removeOldStates(this);
     var basket = getLastState(this);
-    basket.Coupon = {
-        coupon,
-        product
-    };
-    this.statesOfBasket.push(basket);
-    this.cursor++;
+    if (product.name === "basket" || basket.products.has(product)) {
+        basket.Coupon = {
+            coupon,
+            product
+        };
+        this.statesOfBasket.push(basket);
+        this.cursor++;
+    }
 
 };
 ShoppingBasket.prototype.Undo = function () {
@@ -74,7 +76,7 @@ ShoppingBasket.prototype.PrintCheck = function () {
     var number = 0;
     var basket = getLastState(this);
     basket.totalSumm = getTotal(basket);
-    if (!!basket.Coupon.coupon) {
+    if (!!basket.Coupon.coupon && (basket.Coupon.product.name==="basket"|| basket.products.has(basket.Coupon.product))) {
         useCoupon(basket, basket.Coupon.coupon, basket.Coupon.product);
         check += `The coupon is applied to ${basket.Coupon.product.name}. Discount amount is ${basket.Coupon.coupon.discountAmount}${basket.Coupon.coupon.typeOfCoupon==="money"? "$": "%"}\n`;
     }
@@ -98,7 +100,7 @@ function useCoupon(basket, coupon, product) {
                 basket.totalSumm -= coupon.discountAmount;
                 if (basket.totalSumm < 0)
                     basket.totalSumm = 0;
-            } else if (basket.products.has(product)) {
+            } else  {
                 basket.totalSumm -= basket.products.get(product).subSum;
                 basket.products.get(product).subSum -= coupon.discountAmount;
                 if (basket.products.get(product).subSum < 0)
@@ -107,9 +109,9 @@ function useCoupon(basket, coupon, product) {
             }
             break;
         case "persent":
-            if (product.name === "basket" && !!basket.Coupon) {
+            if (product.name === "basket") {
                 basket.totalSumm *= (1 - (coupon.discountAmount / 100));
-            } else if (basket.products.has(product) && !!basket.Coupon) {
+            } else {
                 basket.totalSumm -= basket.products.get(product).subSum;
                 basket.products.get(product).subSum *= (1 - (coupon.discountAmount / 100));
                 basket.totalSumm += basket.products.get(product).subSum;
@@ -119,7 +121,7 @@ function useCoupon(basket, coupon, product) {
 }
 
 function Product(name, price) {
-    if (name.length > 0 && price > 0) {
+    if (name.length > 0 && price > 0 && name!="basket") {
         this.name = name;
         this.price = price;
     }
